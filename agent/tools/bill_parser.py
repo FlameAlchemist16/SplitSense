@@ -15,7 +15,7 @@ ocr = PaddleOCR(
     det_limit_side_len=1216
 )
 
-def extract_text_from_image(image_path: str) -> str:
+def extract_text_from_image(image_path: str) -> dict:
     if image_path == "":
         raise ValueError(f"Image path is empty.")
     
@@ -28,13 +28,21 @@ def extract_text_from_image(image_path: str) -> str:
     output = ocr.predict(image_path)
 
     rec_texts = output[0]["rec_texts"]
+    rec_scores = output[0]["rec_scores"]
 
     if not rec_texts:
         raise ValueError(f"Empty output returned from OCR after reading the bill.")
     
+    min_confidence_score = round(min(rec_scores),2)
     extract_text = ""
 
     for items in rec_texts:
         extract_text += items + "\n"
 
-    return extract_text
+    final_output = {
+        "text": extract_text,
+        "low_confidence_detected": True if min_confidence_score < 0.6 else False,
+        "min_confidence": min_confidence_score
+    }
+
+    return final_output

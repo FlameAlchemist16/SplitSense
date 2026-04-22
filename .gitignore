@@ -6,4 +6,4 @@ data/
 models/
 *.png
 *_output.json
-.vscode
+.vscode/

@@ -36,12 +36,12 @@ def extract_text_from_image(image_path: str) -> dict:
     min_confidence_score = round(min(rec_scores),2)
     extract_text = ""
 
-    for items in rec_texts:
-        extract_text += items + "\n"
+    for text, score in zip(rec_texts, rec_scores):
+        extract_text += f"{text}({round(score,2)})\n"
 
     final_output = {
         "text": extract_text,
-        "low_confidence_detected": True if min_confidence_score < 0.6 else False,
+        "low_confidence_detected": min_confidence_score < 0.6,
         "min_confidence": min_confidence_score
     }
 

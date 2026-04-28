@@ -27,6 +27,28 @@ scan → parse → reason → split → track
 ### 1. Scan
 Point it at a bill photo. PaddleOCR extracts raw text from the image — no manual entry.
 
+Bill sample:
+<img width="250" height="500" alt="image" src="https://github.com/user-attachments/assets/de21d446-5986-4644-b0b8-bf6d28035421" />
+
+OCR Output:
+
+**Format-**
+```json
+{
+  "text": "item_name1(confidence_score) item_name2(confidence_score)",
+  "low_confidence_detected": "True/False",
+  "confidence_threshold": "threshold_value"
+}
+```
+**Sample** **Output**
+```json
+{
+  "text": "DINE-IN(0.94) Main:Table A4(0.92) Token No113(0.96) Item Name(0.95) Qty(1.0) Rate(1.0) Amt(1.0) DRINKING WATER (1(0.94) LITRE)(1.0) 1(0.13) 20.00(1.0) 20.00(1.0) VEGETABLE NOODLES(0.97) 1(0.39) 280.00(1.0) 280.00(1.0) LASAGNE VEGETARIANA(0.97) 490.00(1.0) 490.00(1.0) SUB TOTAL(0.95) Rs790.00(1.0) TOTAL(1.0) Rs 790.00(0.94) GRAND TOTAL(0.97) Rs790.00(1.0) Tax Summary(0.97) Tax Name(0.94) Taxable Amt(0.96) Tax Amt(0.95) CGST2.5%(0.99) Rs 752.38(0.96) Rs 18.81(0.94) SGST2.5%(0.99) Rs 752.38(0.95) Rs18.81(0.99) (Inclusive of 5% Gst)(0.93) ",
+  "low_confidence_detected": "True",
+  "confidence_threshold": 0.94
+}
+```
+
 ### 2. Parse
 Claude Haiku structures the raw OCR text into a clean JSON list of line items, each with a name, price, and inferred category (`veg`, `non_veg`, `alcohol`, `shared`, `tax`).
 

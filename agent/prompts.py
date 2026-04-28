@@ -66,20 +66,20 @@ PARSING REQUIREMENTS:
    - "non_veg"
    - "alcohol"
    - "tax"
+   - "shared"
 
    Rules:
    - chicken, mutton, aquatic animals, egg → non_veg
    - beer, wine, whisky → alcohol
    - SGST, CGST, VAT, service charge, total → tax
    - default food → veg (only if confident, else null)
+   - items which are explicitly meant to be shared among everyone on the table eg: based on bill text signals like "combo", "platter", "bucket", "family pack" etc.
+   - items like water, water bottle should be considered as shared.
 
-7. SHARED FLAG:
-   - true if keywords like combo, platter, bucket, family
-   - else null
-
-8. TOTAL VALIDATION:
+7. TOTAL VALIDATION:
    - Identify OCR total (from bill) )if present
-   - Compute calculated total = sum(price of all items + taxes)
+   - Check if bill states 'inclusive of tax' or similar. If yes, do not add taxes to calculated total — the item subtotal already includes them.
+   - Compute calculated total = sum(price of all items + taxes(if needed as judged above))
    - Compare both (in both of these case - (OCR scan doesn't contain the total) and (total calculated and scanned mismatches), flag it to users and let them verify if the total calculated is correct or not with respect to the value scanned or not present)
 
 OUTPUT SCHEMA:
@@ -106,7 +106,7 @@ Each entry must follow:
    "total_validation": {
       "ocr_total": bill total identified by OCR input if present else NULL,
       "calculated_total": bill total calculated from the final values calculated in TOTAL_VALIDATION step,
-      "mismatch": True if ocr_total matches with calculated_total else False
+      "mismatch": True if ocr_total does not matche with calculated_total else False
    }
 }
 

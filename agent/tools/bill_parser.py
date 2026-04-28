@@ -105,4 +105,4 @@ def structure_bill_with_llm(ocr_output: dict) -> dict:
     except json.JSONDecodeError as e:
         raise ValueError(f"Haiku returned invalid JSON: {e}\nRaw response: {haiku_string}")
     
-    return haiku_dict
+    return haiku_dict[0] if isinstance(haiku_dict, list) else haiku_dict

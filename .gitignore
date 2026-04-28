@@ -7,3 +7,4 @@ models/
 *.png
 *_output.json
 .vscode/
+__init__.py

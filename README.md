@@ -31,13 +31,51 @@ Point it at a bill photo. PaddleOCR extracts raw text from the image — no manu
 Claude Haiku structures the raw OCR text into a clean JSON list of line items, each with a name, price, and inferred category (`veg`, `non_veg`, `alcohol`, `shared`, `tax`).
 
 ```json
-[
-  { "item": "Paneer Tikka",   "price": 320, "category": "veg"     },
-  { "item": "Chicken Biryani","price": 450, "category": "non_veg" },
-  { "item": "Beer x4",        "price": 600, "category": "alcohol" },
-  { "item": "Bread Basket",   "price": 150, "category": "shared"  },
-  { "item": "Service Charge", "price": 152, "category": "tax"     }
-]
+{
+  "item_details": [
+    {
+      "item": "DRINKING WATER (1 LITRE)",
+      "quantity": 1,
+      "price": 20,
+      "category": "shared",
+      "confidence": 0.97
+    },
+    {
+      "item": "VEGETABLE NOODLES",
+      "quantity": 1,
+      "price": 280,
+      "category": "veg",
+      "confidence": 0.79
+    },
+    {
+      "item": "LASAGNE VEGETARIANA",
+      "quantity": 1,
+      "price": 490,
+      "category": "veg",
+      "confidence": 0.97
+    },
+    {
+      "item": "CGST 2.5%",
+      "quantity": "NULL",
+      "price": 18.81,
+      "category": "tax",
+      "confidence": 0.96
+    },
+    {
+      "item": "SGST 2.5%",
+      "quantity": "NULL",
+      "price": 18.81,
+      "category": "tax",
+      "confidence": 0.97
+    }
+  ],
+  "total_validation": {
+    "ocr_total": 790,
+    "calculated_total": 790,
+    "mismatch": "False",
+    "note": "Bill is inclusive of 5% GST. Tax amount (37.62) is already included in the grand total of 790.00. Calculated total matches OCR total."
+  }
+}
 ```
 
 ### 3. Split

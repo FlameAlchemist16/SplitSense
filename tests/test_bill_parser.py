@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from agent.tools.bill_parser import extract_text_from_image, structure_bill_with_llm
 
-image_path = "D:/splitsense/agent/tools/bill_1.png"  # use one of your test bills
+image_path = "D:/splitsense/tests/sample_bills/bill_5.jpg"  # use one of your test bills
 
 ocr_output = extract_text_from_image(image_path)
 print("=== OCR OUTPUT ===")

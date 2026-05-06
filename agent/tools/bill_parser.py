@@ -13,11 +13,24 @@ HAIKU_LLM_MODEL = os.getenv("LLM_MODEL")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 # creating ocr instance
+# ocr = PaddleOCR(
+#     use_angle_cls=True,
+#     lang='en',
+#     ocr_version=OCR_MODEL,
+#     det_limit_side_len=1216
+# )
+
 ocr = PaddleOCR(
-    use_angle_cls=True,
+    use_angle_cls=False,
     lang='en',
     ocr_version=OCR_MODEL,
-    det_limit_side_len=1216
+    # use_gpu=True,                 # MUST for speed
+    det_limit_side_len=1216,
+    # det_limit_side_len=960,       # prevents huge image slowdown
+    det_db_box_thresh=0.5,        # tighter detection → fewer false boxes
+    det_db_unclip_ratio=1.5,      # reduces oversized boxes
+    rec_batch_num=16             # batch recognition
+    # use_dilation=False            # faster detection
 )
 
 # creating anthropic instance

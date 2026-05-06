@@ -79,6 +79,7 @@ PARSING REQUIREMENTS:
 7. TOTAL VALIDATION:
    - Identify OCR total (from bill) )if present
    - Check if bill states 'inclusive of tax' or similar. If yes, do not add taxes to calculated total — the item subtotal already includes them.
+   - Check if the bill total is getting rounded off at the end as per output of OCR scan.
    - Compute calculated total = sum(price of all items + taxes(if needed as judged above))
    - Compare both (in both of these case - (OCR scan doesn't contain the total) and (total calculated and scanned mismatches), flag it to users and let them verify if the total calculated is correct or not with respect to the value scanned or not present)
 

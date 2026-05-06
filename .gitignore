@@ -8,3 +8,4 @@ models/
 *_output.json
 .vscode/
 __init__.py
+tests/sample_bills/

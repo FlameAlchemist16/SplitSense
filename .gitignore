@@ -9,3 +9,4 @@ models/
 .vscode/
 __init__.py
 tests/sample_bills/
+*.db

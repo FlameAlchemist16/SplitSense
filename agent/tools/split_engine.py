@@ -1,3 +1,7 @@
+from agent.llm_client import LLM_MODEL, haiku_client
+from agent.prompts import OVERRIDE_PARSER_SYSTEM_PROMPT
+import json
+
 def split_amount(items, person_id):
     """
     Split total amount of given items among eligible people.
@@ -296,3 +300,49 @@ def calculate_split(
     results["warnings"] = warnings
 
     return results
+
+def parse_overrides_with_llm( prompt: str, people: list[dict], categorized_items: dict) -> dict:
+
+    item_list = [
+    {"item": item.get("item"), "category": category.replace("_items", "")}
+    for category, items in categorized_items.items()
+        for item in items
+            if category != "unknown_items"
+    ]
+
+    people_modified = [{"id": p.get("id"), "name": p.get("name")} for p in people]
+
+    user_prompt = f"""
+    Use these for your task - 
+
+    1. The user prompt given in the input: {prompt}
+    2. The people list[dict]: {people_modified}
+    3. The categorized_items dict: {item_list}
+    """
+    haiku_response = haiku_client.messages.create(
+        model=LLM_MODEL,
+        system=OVERRIDE_PARSER_SYSTEM_PROMPT,
+        max_tokens=5000,
+        messages=[
+            {"role": "user", "content": user_prompt}
+        ]
+    )
+
+    haiku_string = haiku_response.content[0].text
+
+    haiku_string = haiku_string.strip()
+
+    if "```" in haiku_string:
+        haiku_string = haiku_string.split("```")[1]
+
+        if haiku_string.startswith("json"):
+            haiku_string = haiku_string[4:]
+        
+        haiku_string = haiku_string.strip()
+
+    try:
+        haiku_dict = json.loads(haiku_string)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Haiku returned invalid JSON: {e}\nRaw response: {haiku_string}")
+
+    return haiku_dict[0] if isinstance(haiku_dict, list) else haiku_dict

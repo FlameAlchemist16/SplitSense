@@ -178,6 +178,8 @@ Operation meanings:
 * `exclude` = remove people from an existing category/item.
 * `replace` = completely override who should be assigned to a category/item.
 
+Use include when someone is being added to an existing group. Use replace when the prompt explicitly says 'only' or specifies an exhaustive list. Never use replace when the prompt says 'also had' or 'had the X' — these are additive.
+
 Examples:
 
 Category rule:

@@ -2,7 +2,10 @@ from agent.llm_client import LLM_MODEL, haiku_client
 from agent.prompts import OVERRIDE_PARSER_SYSTEM_PROMPT
 import json
 
-def split_amount(items, person_id):
+def split_amount(
+        items,
+        person_id
+):
     """
     Split total amount of given items among eligible people.
     Item-level person assignment.
@@ -220,7 +223,8 @@ def calculate_person_splits(
 
 def calculate_split(
     bill_data: dict,
-    people: list[dict]
+    people: list[dict],
+    user_prompt: str = ""
 ) -> dict:
     """
     Takes structured bill data from bill parser.
@@ -251,8 +255,14 @@ def calculate_split(
         categorized_items=categorized_items,
         people=people
     )
-
+    
     warnings = []
+
+    if user_prompt:
+        overrides = parse_overrides_with_llm(prompt=user_prompt,people=people,categorized_items=categorized_items)
+
+        categorized_items, override_errors = apply_overrides(categorized_items, overrides)
+        warnings.extend(override_errors)
 
     # Validate eligible people assignment
     for category in [
@@ -301,7 +311,11 @@ def calculate_split(
 
     return results
 
-def parse_overrides_with_llm( prompt: str, people: list[dict], categorized_items: dict) -> dict:
+def parse_overrides_with_llm(
+    prompt: str,
+    people: list[dict],
+    categorized_items: dict
+) -> dict:
 
     item_list = [
     {"item": item.get("item"), "category": category.replace("_items", "")}
@@ -346,3 +360,98 @@ def parse_overrides_with_llm( prompt: str, people: list[dict], categorized_items
         raise ValueError(f"Haiku returned invalid JSON: {e}\nRaw response: {haiku_string}")
 
     return haiku_dict[0] if isinstance(haiku_dict, list) else haiku_dict
+
+def apply_overrides(
+    categorized_items: dict,
+    overrides: dict
+) -> tuple[dict, list[str]]:
+    """
+    Applies include, exclude and replace overrides.
+
+    Returns:
+        (
+            updated_categorized_items,
+            errors
+        )
+    """
+
+    errors = []
+
+    def get_matching_items(
+        category: str,
+        item_name: str | None
+    ):
+
+        category_key = f"{category}_items"
+
+        if category_key not in categorized_items:
+
+            errors.append(
+                f"Category '{category}' does not exist."
+            )
+
+            return []
+
+        items = categorized_items[category_key]
+
+        # Category-level rule
+        if item_name is None:
+            return items
+
+        matching_items = [
+            item
+            for item in items
+            if item.get("item") == item_name
+        ]
+
+        if not matching_items:
+
+            errors.append(
+                f"Item '{item_name}' not found in category '{category}'."
+            )
+
+            return []
+
+        return matching_items
+
+    operations = {
+        "exclude": lambda item, person_ids: [
+            pid
+            for pid in item["person_list"]
+            if pid not in person_ids
+        ],
+
+        "include": lambda item, person_ids: (
+            item["person_list"]
+            + [
+                pid
+                for pid in person_ids
+                if pid not in item["person_list"]
+            ]
+        ),
+
+        "replace": lambda item, person_ids: (
+            person_ids.copy()
+        )
+    }
+
+    for operation, update_fn in operations.items():
+
+        for rule in overrides.get(operation, []):
+
+            matching_items = get_matching_items(
+                category=rule.get("category"),
+                item_name=rule.get("item_name")
+            )
+
+            if not matching_items:
+                continue
+
+            for item in matching_items:
+
+                item["person_list"] = update_fn(
+                    item,
+                    rule.get("person_list", [])
+                )
+
+    return categorized_items, errors

@@ -22,12 +22,17 @@ bill_data = {
 people = fetch_people_metadata(people_ids=[1,2,3], session=session)
 print(people)
 
-result = calculate_split(bill_data, people)
+# Test with override prompt
+result_with_override = calculate_split(
+    bill_data=bill_data,
+    people=people,
+    user_prompt="user2 is skipping alcohol tonight. user3 had the chicken. Split the bread basket only between user1 and user2."
+)
 
-print("=== SPLITS ===")
-for split in result["splits"]:
+print("\n=== SPLITS WITH OVERRIDES ===")
+for split in result_with_override["splits"]:
     print(split)
 
-print("\n=== WARNINGS ===")
-for warning in result["warnings"]:
+print("\n=== WARNINGS WITH OVERRIDES ===")
+for warning in result_with_override["warnings"]:
     print(warning)

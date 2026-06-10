@@ -2,15 +2,13 @@ import os
 from paddleocr import PaddleOCR
 from dotenv import load_dotenv
 from agent.prompts import BILL_PARSER_SYSTEM_PROMPT
-import anthropic
 import json
+from agent.llm_client import LLM_MODEL, haiku_client
 
 load_dotenv()
 
 # fetching environment variable for OCR, LLM model
 OCR_MODEL = os.getenv("OCR_MODEL")
-HAIKU_LLM_MODEL = os.getenv("LLM_MODEL")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 # creating ocr instance
 # ocr = PaddleOCR(
@@ -31,11 +29,6 @@ ocr = PaddleOCR(
     det_db_unclip_ratio=1.5,      # reduces oversized boxes
     rec_batch_num=16             # batch recognition
     # use_dilation=False            # faster detection
-)
-
-# creating anthropic instance
-haiku_client = anthropic.Anthropic(
-    api_key= ANTHROPIC_API_KEY
 )
 
 def extract_text_from_image(image_path: str) -> dict:
@@ -93,7 +86,7 @@ def structure_bill_with_llm(ocr_output: dict) -> dict:
     {confidence_threshold}
     """
     haiku_response = haiku_client.messages.create(
-        model=HAIKU_LLM_MODEL,
+        model=LLM_MODEL,
         system=BILL_PARSER_SYSTEM_PROMPT,
         max_tokens=5000,
         messages=[

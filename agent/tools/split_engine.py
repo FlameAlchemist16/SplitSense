@@ -367,29 +367,24 @@ def apply_overrides(
 ) -> tuple[dict, list[str]]:
     """
     Applies include, exclude and replace overrides.
-
     Returns:
         (
             updated_categorized_items,
             errors
         )
     """
-
     errors = []
 
     def get_matching_items(
         category: str,
         item_name: str | None
     ):
-
         category_key = f"{category}_items"
 
         if category_key not in categorized_items:
-
             errors.append(
                 f"Category '{category}' does not exist."
             )
-
             return []
 
         items = categorized_items[category_key]
@@ -405,13 +400,10 @@ def apply_overrides(
         ]
 
         if not matching_items:
-
             errors.append(
                 f"Item '{item_name}' not found in category '{category}'."
             )
-
             return []
-
         return matching_items
 
     operations = {
@@ -420,7 +412,6 @@ def apply_overrides(
             for pid in item["person_list"]
             if pid not in person_ids
         ],
-
         "include": lambda item, person_ids: (
             item["person_list"]
             + [
@@ -429,16 +420,13 @@ def apply_overrides(
                 if pid not in item["person_list"]
             ]
         ),
-
         "replace": lambda item, person_ids: (
             person_ids.copy()
         )
     }
 
     for operation, update_fn in operations.items():
-
         for rule in overrides.get(operation, []):
-
             matching_items = get_matching_items(
                 category=rule.get("category"),
                 item_name=rule.get("item_name")
@@ -448,10 +436,8 @@ def apply_overrides(
                 continue
 
             for item in matching_items:
-
                 item["person_list"] = update_fn(
                     item,
                     rule.get("person_list", [])
                 )
-
     return categorized_items, errors

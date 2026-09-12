@@ -26,7 +26,7 @@ print(people)
 result_with_override = calculate_split(
     bill_data=bill_data,
     people=people,
-    user_prompt="user2 is skipping alcohol tonight. user3 had the chicken. Split the bread basket only between user1 and user2."
+    user_prompt="only user1 and user3 had alcohol tonight. user3 also had the chicken. Split the bread basket only between user1 and user2."
 )
 
 print("\n=== SPLITS WITH OVERRIDES ===")

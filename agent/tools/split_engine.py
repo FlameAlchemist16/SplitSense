@@ -339,7 +339,8 @@ def parse_overrides_with_llm(
         max_tokens=5000,
         messages=[
             {"role": "user", "content": user_prompt}
-        ]
+        ],
+        temperature=0.8
     )
 
     haiku_string = haiku_response.content[0].text

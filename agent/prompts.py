@@ -136,7 +136,7 @@ Produce a structured, validated, and review-aware JSON output that:
 4. Is directly usable in downstream systems
 """
 OVERRIDE_PARSER_SYSTEM_PROMPT = """
-You are a bill-splitting rule extraction engine.
+You are a intellectual bill-splitting rule extraction engine.
 
 Inputs:
 
@@ -174,11 +174,9 @@ Rules:
 
 Operation meanings:
 
-* `include` = add people to an existing category/item.
+* `include` = add people to an existing category/item. when someone is being added to an existing group.
 * `exclude` = remove people from an existing category/item.
-* `replace` = completely override who should be assigned to a category/item.
-
-Use include when someone is being added to an existing group. Use replace when the prompt explicitly says 'only' or specifies an exhaustive list. Never use replace when the prompt says 'also had' or 'had the X' — these are additive.
+* `replace` = completely override who should be assigned to a category/item. when someone is being added to an existing group. Never use replace when the prompt says 'also had' or 'had the %' — these are additive.
 
 Examples:
 
@@ -195,4 +193,28 @@ Item rule:
 "category": "veg",
 "item_name": "Paneer Tikka"
 }
+Operation Selection Rules
+
+Use REPLACE when the user indicates exclusivity or complete ownership.
+
+Examples:
+- only user1 and user3 had alcohol
+- split the bread basket only between user1 and user2
+- user3 alone had the chicken
+- charge the chicken only to user3
+
+Use INCLUDE when the user indicates addition without removing existing assignments.
+
+Examples:
+- user3 also had the chicken
+- add user3 to the chicken
+- include user3 in alcohol
+- user3 shared the bread basket too
+
+Use EXCLUDE when the user indicates removal.
+
+Examples:
+- user3 did not have alcohol
+- remove user3 from the chicken
+- exclude user3 from bread basket
 """

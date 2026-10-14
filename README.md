@@ -151,20 +151,20 @@ After:  A owes C ₹100 · A owes B ₹100                   →  2 transactions
 ```
 splitsense/
 ├── agent/
-│   ├── core.py              # Main ReAct agent loop
+│   ├── core.py                   # Main ReAct agent loop
 │   ├── tools/
-│   │   ├── bill_parser.py   # PaddleOCR + Haiku structuring
-│   │   ├── split_engine.py  # Dietary split logic
-│   │   └── debt_simplifier.py
-│   └── prompts.py           # System prompt templates
+│   │   ├── bill_parser.py        # PaddleOCR + Haiku structuring
+│   │   ├── split_engine.py       # Dietary split logic
+│   │   └── debt_simplifier.py    # Debt simplifier(minimise transactions)
+│   └── prompts.py                # System prompt templates
 ├── db/
-│   ├── models.py            # SQLAlchemy models
-│   ├── crud.py              # DB read/write helpers
-│   └── migrations/          # Alembic migration files
+│   ├── models.py                 # SQLAlchemy models
+│   ├── crud.py                   # DB read/write helpers
+│   └── migrations/               # Alembic migration files
 ├── dashboard/
-│   └── app.py               # Streamlit dashboard (Phase 2)
-├── tests/
-├── .env                     # ANTHROPIC_API_KEY, DB_URL
+│   └── app.py                    # Streamlit dashboard (Phase 2)
+├── tests/                        # Test cases
+├── .env                          # ANTHROPIC_API_KEY, DB_URL
 ├── requirements.txt
 └── README.md
 ```
@@ -191,7 +191,7 @@ git clone https://github.com/MridulKhare/splitsense
 cd splitsense
 pip install -r requirements.txt
 cp .env.example .env   # Add your ANTHROPIC_API_KEY
-python -m agent.core --bill bill.jpg --people "Mridul, Rahul, Priya" --notes "Priya doesn't drink"
+python -m agent.core --bill bill.jpg --people "Raj, Rahul, James" --notes "Rahul doesn't drink"
 ```
 
 ---

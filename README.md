@@ -4,109 +4,132 @@
 [![Phase](https://img.shields.io/badge/phase-1%20CLI-complete-green.svg)]()
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)]()
 
-AI-assisted bill splitting: scan a receipt, split by diet and alcohol rules, confirm each step, then persist balances in SQLite.
+SplitSense parses restaurant bills from images, applies dietary and alcohol-aware splitting rules, and stores balances in SQLite. The default interface is an interactive CLI agent with human confirmation at parse, split, and debt-preview stages.
 
-**Stack:** PaddleOCR · Claude Haiku · SQLAlchemy · SQLite
-
----
-
-## What Phase 1 includes
-
-| Area | Status |
-|------|--------|
-| OCR + LLM bill parsing | Done |
-| Split engine + NL overrides | Done |
-| Debt simplification + settlements | Done |
-| Interactive agent (ReAct + staged approval) | Done |
-| One-shot CLI for scripts / admin | Done |
-| Streamlit dashboard | Not started |
-| Discord bot | Planned (next) |
-| FastAPI + React + Docker | Later |
-
-**Pipeline**
-
-```
-intake → parse → split → debt preview → save to SQLite
-         ↑ human approve at each boxed stage (interactive mode)
-```
+| Component | Technology |
+|-----------|------------|
+| OCR | PaddleOCR |
+| Structuring & overrides | Claude Haiku (Anthropic API) |
+| Persistence | SQLite, SQLAlchemy |
+| Orchestration | ReAct tool loop + staged workflow |
 
 ---
 
-## Quick start
+## Current release (Phase 1)
+
+| Capability | Status |
+|------------|--------|
+| Bill image → OCR → structured line items | Available |
+| Split engine (categories, tax, NL overrides) | Available |
+| Debt simplification and settlement records | Available |
+| Interactive agent with staged approval | Available |
+| One-shot admin CLI (`split`, `people`, `balances`, …) | Available |
+
+### Processing pipeline (interactive mode)
+
+```
+intake → parse → split → debt preview → commit to database
+              ↑ user approval after parse, split, and debt preview
+```
+
+**Intake (ReAct):** Bill image path, participants (names or existing group), payer, optional split notes. Missing people can be registered in the database. Continue with `proceed` when intake is complete.
+
+**Parse:** OCR and LLM produce `item_details` plus total validation metadata.
+
+**Split:** Assigns amounts per person; warnings for unknown categories or empty eligibility.
+
+**Debt preview:** Net balances including the pending bill and a simplified payment list. No database write until commit.
+
+**Commit:** Inserts bill and split rows; balances reflect the new bill.
+
+### Split rule order
+
+1. Natural-language overrides (`include` / `exclude` / `replace` via LLM).
+2. Category rules: `veg`, `non_veg`, `alcohol`, `shared`, `tax`.
+3. Proportional tax from each person’s pre-tax subtotal.
+4. Equal division among eligible people per line item.
+
+---
+
+## Installation
 
 ```bash
+git clone https://github.com/MridulKhare/splitsense
 cd splitsense
 python -m venv venv
 venv\Scripts\activate          # Windows
 # source venv/bin/activate     # macOS / Linux
 pip install -r requirements.txt
-copy .env.example .env         # Windows; use cp elsewhere
+copy .env.example .env         # Windows; use cp on other platforms
 ```
 
-Edit `.env`:
+### Environment variables
 
-| Variable | Purpose |
-|----------|---------|
-| `ANTHROPIC_API_KEY` | Required for agent + bill parsing |
-| `LLM_MODEL` | e.g. `claude-haiku-4-5-20251001` |
-| `DATABASE_URL` | Default `sqlite:///splitsense.db` |
-| `OCR_MODEL` | Optional PaddleOCR version override |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ANTHROPIC_API_KEY` | Yes | Anthropic API key |
+| `LLM_MODEL` | Yes | Model id (e.g. `claude-haiku-4-5-20251001`) |
+| `DATABASE_URL` | Yes | Default: `sqlite:///splitsense.db` |
+| `OCR_MODEL` | No | PaddleOCR version override |
 
-### Interactive agent (recommended)
+---
+
+## Usage
+
+### Interactive agent
 
 ```bash
 python -m agent.core
 ```
 
-1. **Intake** — Chat with the agent to set the bill image, members (or load a group), create missing people, payer, and notes. Type **`proceed`** when ready.
-2. **Parse** — OCR + structured items. **`a`** approve · **`r`** revise · **`j`** JSON · **`q`** quit.
-3. **Split** — Per-person amounts and warnings (same keys).
-4. **Debts** — Net balances including this bill + simplified “who pays whom” (preview only until saved).
-5. **Commit** — Writes bill and splits; updates stored balances.
+| Stage | User actions |
+|-------|----------------|
+| Intake | Chat; type `proceed` when ready |
+| Parse / split / debts | `a` approve, `r` revise (agent), `j` show JSON, `q` quit |
+| Revision | Describe changes; type `done` to return to approval |
 
-### Admin commands (no approval gates)
+### Admin CLI
+
+Commands run the pipeline or database operations without approval gates.
 
 ```bash
 python -m agent.core people add --name Raj --diet veg
 python -m agent.core people list
-python -m agent.core split --bill path/to/bill.jpg --people "Raj, Rahul" --paid-by Raj --notes "Rahul skips alcohol"
+python -m agent.core split --bill path/to/bill.jpg --people "Raj, Rahul" --paid-by Raj
 python -m agent.core bills
 python -m agent.core balances
 python -m agent.core debts
 python -m agent.core settle --from Rahul --to Raj --amount 200
 ```
 
-Shorthand (same as `split`): `python -m agent.core --bill bill.jpg --people "Raj, Rahul"`
+Equivalent split shorthand:
 
-### Tests
+```bash
+python -m agent.core --bill bill.jpg --people "Raj, Rahul"
+```
+
+---
+
+## Testing
 
 ```bash
 python -m pytest
 ```
 
-Unit tests cover split rules, debt simplification, CRUD, and workflow state. OCR/API scripts live under `tests/manual_*.py` (run manually with a real bill and API key).
+Automated tests cover the split engine, debt simplifier, CRUD flows, and workflow state. Scripts under `tests/manual_*.py` require a local bill image and API credentials for end-to-end OCR and LLM checks.
 
 ---
 
-## Split logic (summary)
-
-1. Natural-language overrides (Haiku → include / exclude / replace).
-2. Category assignment — veg, non-veg, alcohol, shared, tax.
-3. Proportional tax on each person’s pre-tax share.
-4. Equal split within each item’s eligible group.
-
----
-
-## Project layout
+## Repository layout
 
 ```
 splitsense/
 ├── agent/
-│   ├── core.py              # Entry point
-│   ├── orchestrator.py      # Staged workflow + approvals
-│   ├── react_loop.py        # ReAct tool loop (Anthropic)
-│   ├── agent_tools.py       # Tool definitions + runner
-│   ├── commands.py          # Admin / one-shot CLI
+│   ├── core.py              # CLI entry
+│   ├── orchestrator.py      # Staged workflow
+│   ├── react_loop.py        # Anthropic tool-use loop
+│   ├── agent_tools.py       # Agent tools
+│   ├── commands.py          # Admin commands
 │   ├── workflow_state.py
 │   ├── cli_display.py
 │   ├── llm_client.py
@@ -128,23 +151,10 @@ splitsense/
 
 ## Roadmap
 
-- [x] Phase 1 — CLI agent, SQLite, staged human verification
-- [ ] **Phase 3 (next)** — Discord bot for group chats (requirements and deployment plan TBD with you before build)
-- [ ] Phase 2 — Streamlit dashboard (optional; may follow Discord)
-- [ ] Phase 4 — FastAPI backend, web UI, containerized deploy
-
----
-
-## Upcoming: Discord + real-world deploy
-
-Not implemented yet. Before coding, we will align on:
-
-- Bot flows (upload bill in channel, map Discord users → `People`, approvals in-thread or DMs).
-- Hosting (always-on process vs serverless; where OCR runs).
-- Secrets (`DISCORD_TOKEN`, Anthropic key), database (SQLite vs managed Postgres for multi-user).
-- How Phase 1 Python modules are reused vs a thin Discord adapter.
-
-Say when you want to walk through that plan; Phase 1 is the foundation the bot will call into.
+| Phase | Scope | Status |
+|-------|--------|--------|
+| 1 | CLI agent, SQLite, staged verification | Complete |
+| 2 | Discord bot | Planned |
 
 ---
 

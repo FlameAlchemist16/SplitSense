@@ -1,219 +1,167 @@
-# SplitSense 🧾
+# SplitSense
 
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-in%20development-orange.svg)]()
+[![Phase](https://img.shields.io/badge/phase-1%20CLI-complete-green.svg)]()
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)]()
 
-**AI-powered bill splitting agent** — scan a receipt, describe who was present, and get a fair split in seconds. No manual item entry. No "everyone pays equally" nonsense.
+SplitSense parses restaurant bills from images, applies dietary and alcohol-aware splitting rules, and stores balances in SQLite. The default interface is an interactive CLI agent with human confirmation at parse, split, and debt-preview stages.
 
-> Built with PaddleOCR + Claude Haiku + SQLite. Dietary rules, alcohol splits, and debt simplification — all handled automatically.
-
----
-
-## The problem
-
-Every group dinner ends the same way: someone photographs the bill, someone else opens a calculator, and someone argues about who had what. It's slow, error-prone, and unfair — the vegans subsidise the steak, the non-drinkers pay for the beer.
-
-SplitSense automates the entire pipeline:
-
-```
-scan → parse → reason → split → track
-```
-
----
-
-## How it works
-
-### 1. Scan
-Point it at a bill photo. PaddleOCR extracts raw text from the image — no manual entry.
-
-Bill sample:
-<img width="250" height="500" alt="image" src="https://github.com/user-attachments/assets/de21d446-5986-4644-b0b8-bf6d28035421" />
-
-OCR Output:
-
-**Format-**
-```json
-{
-  "text": "item_name1(confidence_score) item_name2(confidence_score)",
-  "low_confidence_detected": "True/False",
-  "confidence_threshold": "threshold_value"
-}
-```
-**Sample** **Output**
-```json
-{
-  "text": "DINE-IN(0.94) Main:Table A4(0.92) Token No113(0.96) Item Name(0.95) Qty(1.0) Rate(1.0) Amt(1.0) DRINKING WATER (1(0.94) LITRE)(1.0) 1(0.13) 20.00(1.0) 20.00(1.0) VEGETABLE NOODLES(0.97) 1(0.39) 280.00(1.0) 280.00(1.0) LASAGNE VEGETARIANA(0.97) 490.00(1.0) 490.00(1.0) SUB TOTAL(0.95) Rs790.00(1.0) TOTAL(1.0) Rs 790.00(0.94) GRAND TOTAL(0.97) Rs790.00(1.0) Tax Summary(0.97) Tax Name(0.94) Taxable Amt(0.96) Tax Amt(0.95) CGST2.5%(0.99) Rs 752.38(0.96) Rs 18.81(0.94) SGST2.5%(0.99) Rs 752.38(0.95) Rs18.81(0.99) (Inclusive of 5% Gst)(0.93) ",
-  "low_confidence_detected": "True",
-  "confidence_threshold": 0.94
-}
-```
-
-### 2. Parse
-Claude Haiku structures the raw OCR text into a clean JSON list of line items, each with a name, price, and inferred category (`veg`, `non_veg`, `alcohol`, `shared`, `tax`).
-
-```json
-{
-  "item_details": [
-    {
-      "item": "DRINKING WATER (1 LITRE)",
-      "quantity": 1,
-      "price": 20,
-      "category": "shared",
-      "confidence": 0.97
-    },
-    {
-      "item": "VEGETABLE NOODLES",
-      "quantity": 1,
-      "price": 280,
-      "category": "veg",
-      "confidence": 0.79
-    },
-    {
-      "item": "LASAGNE VEGETARIANA",
-      "quantity": 1,
-      "price": 490,
-      "category": "veg",
-      "confidence": 0.97
-    },
-    {
-      "item": "CGST 2.5%",
-      "quantity": "NULL",
-      "price": 18.81,
-      "category": "tax",
-      "confidence": 0.96
-    },
-    {
-      "item": "SGST 2.5%",
-      "quantity": "NULL",
-      "price": 18.81,
-      "category": "tax",
-      "confidence": 0.97
-    }
-  ],
-  "total_validation": {
-    "ocr_total": 790,
-    "calculated_total": 790,
-    "mismatch": "False",
-    "note": "Bill is inclusive of 5% GST. Tax amount (37.62) is already included in the grand total of 790.00. Calculated total matches OCR total."
-  }
-}
-```
-
-### 3. Split
-The split engine applies rules in priority order:
-
-| Priority | Rule |
-|----------|------|
-| 1 | Explicit prompt override (`"Rahul is skipping alcohol tonight"`) |
-| 2 | Category rule — veg items → veg people, alcohol → drinkers only |
-| 3 | Proportional tax/service charge based on each person's subtotal |
-| 4 | Equal split for shared/unclassifiable items |
-
-### 4. Track
-Splits, balances, and settlement status are persisted in SQLite. A debt simplification algorithm collapses cross-debts to minimise total transactions.
-
-```
-Before: A owes B ₹200 · B owes C ₹200 · C owes A ₹100  →  3 transactions
-After:  A owes C ₹100 · A owes B ₹100                   →  2 transactions
-```
-
----
-
-## Features
-
-- **Bill scanning** — PaddleOCR (local, free) for image-to-text
-- **LLM structuring** — Claude Haiku parses messy OCR into clean JSON
-- **Dietary splitting** — veg / non-veg / alcohol / shared category logic
-- **People profiles** — persistent diet and drinking preferences per person
-- **Prompt overrides** — natural language rules applied on top of defaults
-- **Debt simplification** — greedy graph reduction across all open bills
-- **Settlement tracking** — mark payments, partial or full
-
----
-
-## Tech stack
-
-| Layer | Technology |
-|-------|-----------|
-| LLM | Claude Haiku (Anthropic API) |
+| Component | Technology |
+|-----------|------------|
 | OCR | PaddleOCR |
-| Backend | Python + FastAPI (Phase 4) |
-| Database | SQLite → PostgreSQL |
-| ORM | SQLAlchemy + Alembic |
-| Dashboard | Streamlit (Phase 2) |
-| Agent pattern | ReAct loop with tool calling |
+| Structuring & overrides | Claude Haiku (Anthropic API) |
+| Persistence | SQLite, SQLAlchemy |
+| Orchestration | ReAct tool loop + staged workflow |
 
 ---
 
-## Project structure
+## Current release (Phase 1)
+
+| Capability | Status |
+|------------|--------|
+| Bill image → OCR → structured line items | Available |
+| Split engine (categories, tax, NL overrides) | Available |
+| Debt simplification and settlement records | Available |
+| Interactive agent with staged approval | Available |
+| One-shot admin CLI (`split`, `people`, `balances`, …) | Available |
+
+### Processing pipeline (interactive mode)
+
+```
+intake → parse → split → debt preview → commit to database
+              ↑ user approval after parse, split, and debt preview
+```
+
+**Intake (ReAct):** Bill image path, participants (names or existing group), payer, optional split notes. Missing people can be registered in the database. Continue with `proceed` when intake is complete.
+
+**Parse:** OCR and LLM produce `item_details` plus total validation metadata.
+
+**Split:** Assigns amounts per person; warnings for unknown categories or empty eligibility.
+
+**Debt preview:** Net balances including the pending bill and a simplified payment list. No database write until commit.
+
+**Commit:** Inserts bill and split rows; balances reflect the new bill.
+
+### Split rule order
+
+1. Natural-language overrides (`include` / `exclude` / `replace` via LLM).
+2. Category rules: `veg`, `non_veg`, `alcohol`, `shared`, `tax`.
+3. Proportional tax from each person’s pre-tax subtotal.
+4. Equal division among eligible people per line item.
+
+---
+
+## Installation
+
+```bash
+git clone https://github.com/MridulKhare/splitsense
+cd splitsense
+python -m venv venv
+venv\Scripts\activate          # Windows
+# source venv/bin/activate     # macOS / Linux
+pip install -r requirements.txt
+copy .env.example .env         # Windows; use cp on other platforms
+```
+
+### Environment variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ANTHROPIC_API_KEY` | Yes | Anthropic API key |
+| `LLM_MODEL` | Yes | Model id (e.g. `claude-haiku-4-5-20251001`) |
+| `DATABASE_URL` | Yes | Default: `sqlite:///splitsense.db` |
+| `OCR_MODEL` | No | PaddleOCR version override |
+
+---
+
+## Usage
+
+### Interactive agent
+
+```bash
+python -m agent.core
+```
+
+| Stage | User actions |
+|-------|----------------|
+| Intake | Chat; type `proceed` when ready |
+| Parse / split / debts | `a` approve, `r` revise (agent), `j` show JSON, `q` quit |
+| Revision | Describe changes; type `done` to return to approval |
+
+### Admin CLI
+
+Commands run the pipeline or database operations without approval gates.
+
+```bash
+python -m agent.core people add --name Raj --diet veg
+python -m agent.core people list
+python -m agent.core split --bill path/to/bill.jpg --people "Raj, Rahul" --paid-by Raj
+python -m agent.core bills
+python -m agent.core balances
+python -m agent.core debts
+python -m agent.core settle --from Rahul --to Raj --amount 200
+```
+
+Equivalent split shorthand:
+
+```bash
+python -m agent.core --bill bill.jpg --people "Raj, Rahul"
+```
+
+---
+
+## Testing
+
+```bash
+python -m pytest
+```
+
+Automated tests cover the split engine, debt simplifier, CRUD flows, and workflow state. Scripts under `tests/manual_*.py` require a local bill image and API credentials for end-to-end OCR and LLM checks.
+
+---
+
+## Repository layout
 
 ```
 splitsense/
 ├── agent/
-│   ├── core.py                   # Main ReAct agent loop
-│   ├── tools/
-│   │   ├── bill_parser.py        # PaddleOCR + Haiku structuring
-│   │   ├── split_engine.py       # Dietary split logic
-│   │   └── debt_simplifier.py    # Debt simplifier(minimise transactions)
-│   └── prompts.py                # System prompt templates
+│   ├── core.py              # CLI entry
+│   ├── orchestrator.py      # Staged workflow
+│   ├── react_loop.py        # Anthropic tool-use loop
+│   ├── agent_tools.py       # Agent tools
+│   ├── commands.py          # Admin commands
+│   ├── workflow_state.py
+│   ├── cli_display.py
+│   ├── llm_client.py
+│   ├── prompts.py
+│   └── tools/
+│       ├── bill_parser.py
+│       ├── split_engine.py
+│       └── debt_simplifier.py
 ├── db/
-│   ├── models.py                 # SQLAlchemy models
-│   ├── crud.py                   # DB read/write helpers
-│   └── migrations/               # Alembic migration files
-├── dashboard/
-│   └── app.py                    # Streamlit dashboard (Phase 2)
-├── tests/                        # Test cases
-├── .env                          # ANTHROPIC_API_KEY, DB_URL
+│   ├── models.py
+│   └── crud.py
+├── tests/
 ├── requirements.txt
-└── README.md
+├── .env.example
+└── LICENSE
 ```
 
 ---
 
 ## Roadmap
 
-- [x] Project spec and architecture design
-- [ ] **Phase 1** — CLI: OCR pipeline + split engine + SQLite *(in progress)*
-- [ ] **Phase 2** — Streamlit dashboard: balances, history, settlements
-- [ ] **Phase 3** — Discord bot: split bills directly in group chat
-- [ ] **Phase 4** — FastAPI backend + React UI + Docker
-
----
-
-## Getting started
-
-> Phase 1 (CLI) is currently in development. Setup instructions will be added once the core pipeline is stable.
-
-```bash
-# Coming soon
-git clone https://github.com/MridulKhare/splitsense
-cd splitsense
-pip install -r requirements.txt
-cp .env.example .env   # Add your ANTHROPIC_API_KEY
-python -m agent.core --bill bill.jpg --people "Raj, Rahul, James" --notes "Rahul doesn't drink"
-```
-
----
-
-## Why this exists
-
-Most bill splitting tools are dumb calculators — they require manual item entry, apply no dietary logic, and forget everything after you close the app. SplitSense is an intelligent agent: it reads, reasons, and remembers.
-
-The core insight: **vision + LLM reasoning + persistent memory**.
+| Phase | Scope | Status |
+|-------|--------|--------|
+| 1 | CLI agent, SQLite, staged verification | Complete |
+| 2 | Discord bot | Planned |
 
 ---
 
 ## Author
 
-**Mridul Khare** — Data Engineer at Deloitte USI, building towards AI Engineering.
-Reach me at [mridulkhr4@gmail.com](mailto:mridulkhr4@gmail.com) · [LinkedIn](https://linkedin.com/in/mridul-khare)
-
----
+**Mridul Khare** — [mridulkhr4@gmail.com](mailto:mridulkhr4@gmail.com) · [LinkedIn](https://linkedin.com/in/mridul-khare)
 
 ## License
 
-Copyright (c) 2025 Mridul Khare
-
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-You are free to use, copy, and modify this code, but the copyright notice and this permission notice must be included in all copies or substantial portions of the software.
+[MIT](LICENSE) — Copyright (c) 2025 Mridul Khare

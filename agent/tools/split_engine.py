@@ -1,6 +1,5 @@
-from agent.llm_client import LLM_MODEL, haiku_client
+from agent.llm_client import LLM_MODEL, haiku_client, parse_llm_json
 from agent.prompts import OVERRIDE_PARSER_SYSTEM_PROMPT
-import json
 
 def split_amount(
         items,
@@ -343,24 +342,7 @@ def parse_overrides_with_llm(
         temperature=0.8
     )
 
-    haiku_string = haiku_response.content[0].text
-
-    haiku_string = haiku_string.strip()
-
-    if "```" in haiku_string:
-        haiku_string = haiku_string.split("```")[1]
-
-        if haiku_string.startswith("json"):
-            haiku_string = haiku_string[4:]
-        
-        haiku_string = haiku_string.strip()
-
-    try:
-        haiku_dict = json.loads(haiku_string)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Haiku returned invalid JSON: {e}\nRaw response: {haiku_string}")
-
-    return haiku_dict[0] if isinstance(haiku_dict, list) else haiku_dict
+    return parse_llm_json(haiku_response.content[0].text)
 
 def apply_overrides(
     categorized_items: dict,

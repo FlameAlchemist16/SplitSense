@@ -7,6 +7,7 @@ models/
 *.png
 *_output.json
 .vscode/
-__init__.py
 tests/sample_bills/
 *.db
+.pytest_cache/
+pytest-cache-files-*/

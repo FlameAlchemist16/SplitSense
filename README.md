@@ -1,7 +1,7 @@
 # SplitSense
 
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Phase](https://img.shields.io/badge/phase-1%20CLI-complete-green.svg)]()
+[![Phase](https://img.shields.io/badge/Phase--1%20CLI--Complete-green.svg)]()
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)]()
 
 SplitSense parses restaurant bills from images, applies dietary and alcohol-aware splitting rules, and stores balances in SQLite. The default interface is an interactive CLI agent with human confirmation at parse, split, and debt-preview stages.
